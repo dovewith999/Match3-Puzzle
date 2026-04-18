@@ -16,7 +16,7 @@ namespace Match3.ECS.Game
             RequireForUpdate(GetEntityQuery(ComponentType.ReadOnly(typeof(BoardConfigComponent))));
         }
 
-protected override void OnUpdate()
+        protected override void OnUpdate()
         {
             var mouse = UnityEngine.InputSystem.Mouse.current;
 
@@ -49,26 +49,29 @@ protected override void OnUpdate()
 
         private void EnqueueSwapRequest(int2 from, int2 to)
         {
-            var ecbSystem = World.GetOrCreateSystemManaged(
-                typeof(BeginSimulationEntityCommandBufferSystem))
-                as BeginSimulationEntityCommandBufferSystem;
-
-            var ecb = ecbSystem.CreateCommandBuffer();
-            var entity = ecb.CreateEntity();
-            ecb.AddComponent(entity, new SwapRequestComponent
+            if (World.GetOrCreateSystemManaged(typeof(BeginSimulationEntityCommandBufferSystem)) is BeginSimulationEntityCommandBufferSystem ecbSystem)
             {
-                FromX = from.x,
-                FromY = from.y,
-                ToX = to.x,
-                ToY = to.y,
-            });
+                var ecb = ecbSystem.CreateCommandBuffer();
+                var entity = ecb.CreateEntity();
+                ecb.AddComponent(entity, new SwapRequestComponent
+                {
+                    FromX = from.x,
+                    FromY = from.y,
+                    ToX = to.x,
+                    ToY = to.y,
+                });
+            }
         }
 
-private int2 ConvertMouseToCell(Vector2 screenPos)
+        private int2 ConvertMouseToCell(Vector2 screenPos)
         {
-            var configEntity = GetEntityQuery(
-                ComponentType.ReadOnly(typeof(BoardConfigComponent))).GetSingletonEntity();
+            var configEntity = GetEntityQuery( ComponentType.ReadOnly(typeof(BoardConfigComponent))).GetSingletonEntity();
             var config = EntityManager.GetComponentData<BoardConfigComponent>(configEntity);
+            if (Camera.main == null)
+            {
+                return new int2();
+            }
+
             var worldPos = Camera.main.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, 0f));
             var x = Mathf.RoundToInt(worldPos.x + config.XDim / 2.0f);
             var y = Mathf.RoundToInt(config.YDim / 2.0f - worldPos.y);

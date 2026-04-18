@@ -15,6 +15,7 @@ namespace Match3.ECS.Game
 
         public void OnCreate(ref SystemState state)
         {
+            state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<LevelConfigComponent>();
             state.RequireForUpdate<TimerComponent>();
             state.RequireForUpdate<ScoreComponent>();
@@ -34,9 +35,7 @@ namespace Match3.ECS.Game
             var remaining = timer.RemainingSeconds - SystemAPI.Time.DeltaTime;
             remaining = math.max(remaining, 0f);
 
-            var ecb = SystemAPI
-                .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                .CreateCommandBuffer(state.WorldUnmanaged);
+            var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>() .CreateCommandBuffer(state.WorldUnmanaged);
 
             PublishTimerTick(ref ecb, remaining);
 

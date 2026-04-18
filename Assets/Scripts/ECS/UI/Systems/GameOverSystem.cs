@@ -12,8 +12,7 @@ namespace Match3.ECS.UI
         protected override void OnCreate()
         {
             _handled = false;
-            RequireForUpdate(GetEntityQuery(
-                ComponentType.ReadOnly(typeof(Game.GameResultEvent))));
+            RequireForUpdate(GetEntityQuery( ComponentType.ReadOnly(typeof(Game.GameResultEvent))));
         }
 
         protected override void OnUpdate()
@@ -23,8 +22,7 @@ namespace Match3.ECS.UI
                 return;
             }
 
-            foreach (var (result, entity) in
-                SystemAPI.Query<RefRO<Game.GameResultEvent>>().WithEntityAccess())
+            foreach (var (result, entity) in SystemAPI.Query<RefRO<Game.GameResultEvent>>().WithEntityAccess())
             {
                 _handled = true;
                 ShowResult(result.ValueRO.FinalScore, result.ValueRO.StarCount);

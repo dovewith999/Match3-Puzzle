@@ -36,8 +36,7 @@ namespace Match3.ECS.UI
         {
             var highest = CharacterExpressionECS.Idle;
 
-            foreach (var (ev, entity) in
-                SystemAPI.Query<RefRO<Game.ComboOccurredEvent>>().WithEntityAccess())
+            foreach (var (ev, entity) in SystemAPI.Query<RefRO<Game.ComboOccurredEvent>>().WithEntityAccess())
             {
                 int count = ev.ValueRO.ComboCount;
                 EntityManager.DestroyEntity(entity);
@@ -68,15 +67,13 @@ namespace Match3.ECS.UI
                 return highest;
             }
 
-            foreach (var (_, entity) in
-                SystemAPI.Query<RefRO<Game.LowTimeWarningEvent>>().WithEntityAccess())
+            foreach (var (_, entity) in SystemAPI.Query<RefRO<Game.LowTimeWarningEvent>>().WithEntityAccess())
             {
                 EntityManager.DestroyEntity(entity);
                 return CharacterExpressionECS.Nervous;
             }
 
-            foreach (var (_, entity) in
-                SystemAPI.Query<RefRO<Game.NoScoreElapsedEvent>>().WithEntityAccess())
+            foreach (var (_, entity) in SystemAPI.Query<RefRO<Game.NoScoreElapsedEvent>>().WithEntityAccess())
             {
                 EntityManager.DestroyEntity(entity);
                 return CharacterExpressionECS.Bored;

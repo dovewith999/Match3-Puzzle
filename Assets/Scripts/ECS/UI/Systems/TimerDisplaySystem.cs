@@ -11,14 +11,12 @@ namespace Match3.ECS.UI
 
         protected override void OnCreate()
         {
-            RequireForUpdate(GetEntityQuery(
-                ComponentType.ReadOnly(typeof(Game.TimerTickEvent))));
+            RequireForUpdate(GetEntityQuery( ComponentType.ReadOnly(typeof(Game.TimerTickEvent))));
         }
 
         protected override void OnUpdate()
         {
-            foreach (var (tickEvent, entity) in
-                SystemAPI.Query<RefRO<Game.TimerTickEvent>>().WithEntityAccess())
+            foreach (var (tickEvent, entity) in SystemAPI.Query<RefRO<Game.TimerTickEvent>>().WithEntityAccess())
             {
                 int displaySeconds = tickEvent.ValueRO.DisplaySeconds;
                 EntityManager.DestroyEntity(entity);

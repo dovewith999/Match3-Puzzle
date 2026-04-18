@@ -11,6 +11,7 @@ namespace Match3.ECS.Game
     {
         public void OnCreate(ref SystemState state)
         {
+            state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<BoardConfigComponent>();
         }
 
@@ -18,9 +19,7 @@ namespace Match3.ECS.Game
         public void OnUpdate(ref SystemState state)
         {
             var config = SystemAPI.GetSingleton<BoardConfigComponent>();
-            var ecb = SystemAPI
-                .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                .CreateCommandBuffer(state.WorldUnmanaged);
+            var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>() .CreateCommandBuffer(state.WorldUnmanaged);
 
             var pieces = new NativeArray<PieceComponent>(
                 config.XDim * config.YDim, Allocator.Temp);
@@ -40,10 +39,7 @@ namespace Match3.ECS.Game
         }
 
         [BurstCompile]
-        private static void ScanAndEmitMatches(
-            ref EntityCommandBuffer ecb,
-            in NativeArray<PieceComponent> pieces,
-            in BoardConfigComponent config)
+        private static void ScanAndEmitMatches(ref EntityCommandBuffer ecb, in NativeArray<PieceComponent> pieces, in BoardConfigComponent config)
         {
             for (int y = 0; y < config.YDim; y++)
             {
@@ -82,12 +78,7 @@ namespace Match3.ECS.Game
         }
 
         [BurstCompile]
-        private static int CountConsecutive(
-            in NativeArray<PieceComponent> pieces,
-            in BoardConfigComponent config,
-            int startX, int startY,
-            int dx, int dy,
-            ColorTypeECS color)
+        private static int CountConsecutive( in NativeArray<PieceComponent> pieces, in BoardConfigComponent config, int startX, int startY, int dx, int dy, ColorTypeECS color)
         {
             int count = 1;
             int nx = startX + dx;

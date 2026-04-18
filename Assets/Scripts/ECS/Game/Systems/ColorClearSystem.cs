@@ -11,6 +11,7 @@ namespace Match3.ECS.Game
     {
         public void OnCreate(ref SystemState state)
         {
+            state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<BoardConfigComponent>();
         }
 
@@ -20,15 +21,12 @@ namespace Match3.ECS.Game
             bool hasRequest = false;
             ColorTypeECS targetColor = ColorTypeECS.None;
 
-            foreach (var (request, requestEntity) in
-                SystemAPI.Query<RefRO<ColorClearRequest>>().WithEntityAccess())
+            foreach (var (request, requestEntity) in SystemAPI.Query<RefRO<ColorClearRequest>>().WithEntityAccess())
             {
                 hasRequest = true;
                 targetColor = request.ValueRO.TargetColor;
 
-                var ecb = SystemAPI
-                    .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                    .CreateCommandBuffer(state.WorldUnmanaged);
+                var ecb = SystemAPI .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>() .CreateCommandBuffer(state.WorldUnmanaged);
 
                 ecb.DestroyEntity(requestEntity);
                 break;
@@ -45,12 +43,9 @@ namespace Match3.ECS.Game
         [BurstCompile]
         private void ClearAllMatchingColor(ref SystemState state, ColorTypeECS targetColor)
         {
-            var ecb = SystemAPI
-                .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                .CreateCommandBuffer(state.WorldUnmanaged);
+            var ecb = SystemAPI .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>() .CreateCommandBuffer(state.WorldUnmanaged);
 
-            foreach (var (piece, entity) in
-                SystemAPI.Query<RefRO<PieceComponent>>().WithEntityAccess())
+            foreach (var (piece, entity) in SystemAPI.Query<RefRO<PieceComponent>>().WithEntityAccess())
             {
                 var p = piece.ValueRO;
 

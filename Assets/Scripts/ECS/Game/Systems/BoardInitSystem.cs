@@ -39,9 +39,9 @@ namespace Match3.ECS.Game
         [BurstCompile]
         private static void SpawnEmptySlots(ref EntityCommandBuffer ecb, in BoardConfigComponent config)
         {
-            for (int y = 0; y < config.YDim; y++)
+            for (int y = 0; y < config.YDim; ++y)
             {
-                for (int x = 0; x < config.XDim; x++)
+                for (int x = 0; x < config.XDim; ++x)
                 {
                     var entity = ecb.CreateEntity();
                     ecb.AddComponent(entity, new PieceComponent

@@ -15,6 +15,7 @@ namespace Match3.ECS.Game
 
         public void OnCreate(ref SystemState state)
         {
+            state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<ScoreComponent>();
             state.RequireForUpdate<ComboComponent>();
             _noScoreEventSent = false;
@@ -50,9 +51,7 @@ namespace Match3.ECS.Game
                 score.TimeSinceLastScore = 0f;
                 _noScoreEventSent = false;
 
-                var ecb = SystemAPI
-                    .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                    .CreateCommandBuffer(state.WorldUnmanaged);
+                var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>() .CreateCommandBuffer(state.WorldUnmanaged);
 
                 var scoreEvent = ecb.CreateEntity();
                 ecb.AddComponent(scoreEvent, new ScoreChangedEvent
@@ -86,9 +85,7 @@ namespace Match3.ECS.Game
         [BurstCompile]
         private void PublishNoScoreEvent(ref SystemState state)
         {
-            var ecb = SystemAPI
-                .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                .CreateCommandBuffer(state.WorldUnmanaged);
+            var ecb = SystemAPI .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>() .CreateCommandBuffer(state.WorldUnmanaged);
 
             var entity = ecb.CreateEntity();
             ecb.AddComponent(entity, new NoScoreElapsedEvent

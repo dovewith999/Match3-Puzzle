@@ -12,15 +12,14 @@ namespace Match3.ECS.Game
     {
         public void OnCreate(ref SystemState state)
         {
+            state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<BoardConfigComponent>();
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var ecb = SystemAPI
-                .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                .CreateCommandBuffer(state.WorldUnmanaged);
+            var ecb = SystemAPI .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>() .CreateCommandBuffer(state.WorldUnmanaged);
 
             var config = SystemAPI.GetSingleton<BoardConfigComponent>();
             int total = config.XDim * config.YDim;
@@ -28,8 +27,7 @@ namespace Match3.ECS.Game
             var pieces = new NativeArray<PieceComponent>(total, Allocator.Temp);
             var entities = new NativeArray<Entity>(total, Allocator.Temp);
 
-            foreach (var (piece, entity) in
-                SystemAPI.Query<RefRO<PieceComponent>>().WithEntityAccess())
+            foreach (var (piece, entity) in SystemAPI.Query<RefRO<PieceComponent>>().WithEntityAccess())
             {
                 var p = piece.ValueRO;
                 if (p.X < 0 || p.X >= config.XDim || p.Y < 0 || p.Y >= config.YDim)
@@ -42,8 +40,7 @@ namespace Match3.ECS.Game
                 entities[idx] = entity;
             }
 
-            foreach (var (request, requestEntity) in
-                SystemAPI.Query<RefRO<SwapRequestComponent>>().WithEntityAccess())
+            foreach (var (request, requestEntity) in SystemAPI.Query<RefRO<SwapRequestComponent>>().WithEntityAccess())
             {
                 var req = request.ValueRO;
                 ProcessSwapRequest(ref state, ref ecb, pieces, entities, config, req);
@@ -55,19 +52,12 @@ namespace Match3.ECS.Game
         }
 
         [BurstCompile]
-        private static void ProcessSwapRequest(
-            ref SystemState state,
-            ref EntityCommandBuffer ecb,
-            in NativeArray<PieceComponent> pieces,
-            in NativeArray<Entity> entities,
-            in BoardConfigComponent config,
-            in SwapRequestComponent req)
+        private static void ProcessSwapRequest(ref SystemState state, ref EntityCommandBuffer ecb, in NativeArray<PieceComponent> pieces, in NativeArray<Entity> entities, in BoardConfigComponent config, in SwapRequestComponent req)
         {
             int fromIdx = req.FromY * config.XDim + req.FromX;
             int toIdx = req.ToY * config.XDim + req.ToX;
 
-            if (fromIdx < 0 || fromIdx >= pieces.Length ||
-                toIdx < 0 || toIdx >= pieces.Length)
+            if (fromIdx < 0 || fromIdx >= pieces.Length || toIdx < 0 || toIdx >= pieces.Length)
             {
                 return;
             }
@@ -75,8 +65,7 @@ namespace Match3.ECS.Game
             var fromPiece = pieces[fromIdx];
             var toPiece = pieces[toIdx];
 
-            if (fromPiece.PieceType == PieceTypeECS.Empty ||
-                toPiece.PieceType == PieceTypeECS.Empty)
+            if (fromPiece.PieceType == PieceTypeECS.Empty || toPiece.PieceType == PieceTypeECS.Empty)
             {
                 return;
             }

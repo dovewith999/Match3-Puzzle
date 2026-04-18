@@ -21,8 +21,7 @@ namespace Match3.ECS.Game
 
         private void HandleStartCommand()
         {
-            foreach (var (_, entity) in
-                SystemAPI.Query<RefRO<GameStartCommand>>().WithEntityAccess())
+            foreach (var (_, entity) in SystemAPI.Query<RefRO<GameStartCommand>>().WithEntityAccess())
             {
                 var timer = SystemAPI.GetSingleton<TimerComponent>();
                 SystemAPI.SetSingleton(new TimerComponent
@@ -37,8 +36,7 @@ namespace Match3.ECS.Game
 
         private void HandlePauseCommand()
         {
-            foreach (var (cmd, entity) in
-                SystemAPI.Query<RefRO<GamePauseCommand>>().WithEntityAccess())
+            foreach (var (cmd, entity) in SystemAPI.Query<RefRO<GamePauseCommand>>().WithEntityAccess())
             {
                 var timer = SystemAPI.GetSingleton<TimerComponent>();
                 SystemAPI.SetSingleton(new TimerComponent
@@ -53,8 +51,7 @@ namespace Match3.ECS.Game
 
         private void HandleRetryCommand()
         {
-            foreach (var (_, entity) in
-                SystemAPI.Query<RefRO<GameRetryCommand>>().WithEntityAccess())
+            foreach (var (_, entity) in SystemAPI.Query<RefRO<GameRetryCommand>>().WithEntityAccess())
             {
                 EntityManager.DestroyEntity(entity);
                 SceneManager.LoadScene(SceneManager.GetActiveScene().name);

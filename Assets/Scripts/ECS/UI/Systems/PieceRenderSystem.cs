@@ -34,10 +34,7 @@ namespace Match3.ECS.UI
 
         protected override void OnUpdate()
         {
-            foreach (var (piece, entity) in
-                SystemAPI.Query<RefRO<PieceComponent>>()
-                    .WithNone<PieceVisualComponent>()
-                    .WithEntityAccess())
+            foreach (var (piece, entity) in SystemAPI.Query<RefRO<PieceComponent>>() .WithNone<PieceVisualComponent>() .WithEntityAccess())
             {
                 if (piece.ValueRO.PieceType == PieceTypeECS.Empty)
                 {
@@ -53,17 +50,15 @@ namespace Match3.ECS.UI
 
                 EntityManager.AddComponentData(entity, new PieceVisualComponent
                 {
-                    VisualObject  = go,
-                    LastX         = piece.ValueRO.X,
-                    LastY         = piece.ValueRO.Y,
-                    LastColor     = piece.ValueRO.ColorType,
+                    VisualObject = go,
+                    LastX = piece.ValueRO.X,
+                    LastY = piece.ValueRO.Y,
+                    LastColor = piece.ValueRO.ColorType,
                     LastPieceType = piece.ValueRO.PieceType,
                 });
             }
 
-            foreach (var (piece, visual, entity) in
-                SystemAPI.Query<RefRO<PieceComponent>, RefRW<PieceVisualComponent>>()
-                    .WithEntityAccess())
+            foreach (var (piece, visual, entity) in SystemAPI.Query<RefRO<PieceComponent>, RefRW<PieceVisualComponent>>() .WithEntityAccess())
             {
                 var p = piece.ValueRO;
 
@@ -118,31 +113,35 @@ namespace Match3.ECS.UI
                 if (sprite != null)
                 {
                     sr.sprite = sprite;
-                    sr.color  = Color.white;
+                    sr.color = Color.white;
                     return;
                 }
             }
 
             if (s_squareSprite == null)
             {
-                var tex  = new Texture2D(32, 32);
+                var tex = new Texture2D(32, 32);
                 var fill = new Color[32 * 32];
-                for (int i = 0; i < fill.Length; i++) { fill[i] = Color.white; }
+                for (int i = 0; i < fill.Length; i++)
+                {
+                    fill[i] = Color.white;
+                }
+
                 tex.SetPixels(fill);
                 tex.Apply();
                 s_squareSprite = Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32f);
             }
 
             sr.sprite = s_squareSprite;
-            sr.color  = colorType switch
+            sr.color = colorType switch
             {
-                ColorTypeECS.Yellow => new Color(1f,   0.9f, 0.2f),
+                ColorTypeECS.Yellow => new Color(1f, 0.9f, 0.2f),
                 ColorTypeECS.Purple => new Color(0.7f, 0.3f, 1f),
-                ColorTypeECS.Red    => new Color(1f,   0.3f, 0.3f),
-                ColorTypeECS.Blue   => new Color(0.3f, 0.6f, 1f),
-                ColorTypeECS.Green  => new Color(0.3f, 0.9f, 0.4f),
-                ColorTypeECS.Pink   => new Color(1f,   0.5f, 0.8f),
-                _                   => Color.gray,
+                ColorTypeECS.Red => new Color(1f, 0.3f, 0.3f),
+                ColorTypeECS.Blue => new Color(0.3f, 0.6f, 1f),
+                ColorTypeECS.Green => new Color(0.3f, 0.9f, 0.4f),
+                ColorTypeECS.Pink => new Color(1f, 0.5f, 0.8f),
+                _ => Color.gray,
             };
         }
 

@@ -11,14 +11,12 @@ namespace Match3.ECS.UI
 
         protected override void OnCreate()
         {
-            RequireForUpdate(GetEntityQuery(
-                ComponentType.ReadOnly(typeof(Game.ScoreChangedEvent))));
+            RequireForUpdate(GetEntityQuery( ComponentType.ReadOnly(typeof(Game.ScoreChangedEvent))));
         }
 
         protected override void OnUpdate()
         {
-            foreach (var (scoreEvent, entity) in
-                SystemAPI.Query<RefRO<Game.ScoreChangedEvent>>().WithEntityAccess())
+            foreach (var (scoreEvent, entity) in SystemAPI.Query<RefRO<Game.ScoreChangedEvent>>().WithEntityAccess())
             {
                 int newScore = scoreEvent.ValueRO.NewScore;
                 OnScoreChanged(newScore);

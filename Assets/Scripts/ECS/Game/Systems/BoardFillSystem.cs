@@ -15,6 +15,7 @@ namespace Match3.ECS.Game
 
         public void OnCreate(ref SystemState state)
         {
+            state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<BoardConfigComponent>();
             _randomSeed = 12345u;
         }
@@ -48,9 +49,7 @@ namespace Match3.ECS.Game
                 entities[idx] = entity;
             }
 
-            var ecb = SystemAPI
-                .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-                .CreateCommandBuffer(state.WorldUnmanaged);
+            var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
 
             var rng = new Random(_randomSeed);
 
