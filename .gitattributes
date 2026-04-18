@@ -1,0 +1,34 @@
+# Normalize text files to LF in repository
+* text=auto eol=lf
+
+# Windows scripts/solutions keep CRLF in working tree
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.sln text eol=crlf
+
+# Unity/C# source assets as text
+*.cs text
+*.csproj text
+*.props text
+*.targets text
+*.json text
+*.md text
+*.meta text
+*.unity text
+*.yaml text
+*.yml text
+*.txt text
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.psd binary
+*.fbx binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.dll binary
+*.exe binary
+*.zip binary
