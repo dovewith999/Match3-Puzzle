@@ -56,7 +56,7 @@ namespace Match3.ECS.Game
             ApplyGravity(ref ecb, ref pieces, ref entities, in config);
             SpawnNewPieces(ref ecb, ref pieces, ref entities, in config, ref rng);
 
-            _randomSeed = rng.state;
+            _randomSeed = rng.state == 0u ? 1u : rng.state;
 
             pieces.Dispose();
             entities.Dispose();

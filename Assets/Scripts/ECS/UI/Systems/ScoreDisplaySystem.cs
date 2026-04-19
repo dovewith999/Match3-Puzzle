@@ -3,28 +3,32 @@ using UnityEngine;
 
 namespace Match3.ECS.UI
 {
-    [WorldSystemFilter(WorldSystemFilterFlags.Presentation)]
-    [UpdateInGroup(typeof(PresentationSystemGroup))]
+    [WorldSystemFilter(WorldSystemFilterFlags.LocalSimulation)]
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
     public partial class ScoreDisplaySystem : SystemBase
     {
-        private Game.ScoreComponent _lastScore;
+        private EndSimulationEntityCommandBufferSystem _ecbSystem;
 
         protected override void OnCreate()
         {
-            RequireForUpdate(GetEntityQuery( ComponentType.ReadOnly(typeof(Game.ScoreChangedEvent))));
+            _ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
+            RequireForUpdate(GetEntityQuery(ComponentType.ReadOnly(typeof(Game.ScoreChangedEvent))));
         }
 
         protected override void OnUpdate()
         {
-            foreach (var (scoreEvent, entity) in SystemAPI.Query<RefRO<Game.ScoreChangedEvent>>().WithEntityAccess())
+            var ecb = _ecbSystem.CreateCommandBuffer();
+
+            foreach (var (scoreEvent, entity) in
+                SystemAPI.Query<RefRO<Game.ScoreChangedEvent>>().WithEntityAccess())
             {
                 int newScore = scoreEvent.ValueRO.NewScore;
-                OnScoreChanged(newScore);
-                EntityManager.DestroyEntity(entity);
+                ecb.DestroyEntity(entity);
+                UpdateHud(newScore);
             }
         }
 
-        private static void OnScoreChanged(int newScore)
+        private static void UpdateHud(int newScore)
         {
             var hud = Object.FindFirstObjectByType<HudBridge>();
 

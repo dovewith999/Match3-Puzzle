@@ -1,9 +1,14 @@
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
+using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
 namespace Match3.ECS.Game
 {
+    // 마우스(에디터/PC)와 터치(모바일) 입력을 통합 처리합니다.
+    // Press → Cell 기록, Release → 인접 Cell 스왑 요청
     [WorldSystemFilter(WorldSystemFilterFlags.LocalSimulation)]
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     public partial class InputSystem : SystemBase
@@ -16,65 +21,105 @@ namespace Match3.ECS.Game
             RequireForUpdate(GetEntityQuery(ComponentType.ReadOnly(typeof(BoardConfigComponent))));
         }
 
+        protected override void OnStartRunning()
+        {
+            // 멀티터치 지원을 위해 EnhancedTouch 활성화
+            EnhancedTouchSupport.Enable();
+        }
+
+        protected override void OnStopRunning()
+        {
+            EnhancedTouchSupport.Disable();
+        }
+
         protected override void OnUpdate()
         {
-            var mouse = UnityEngine.InputSystem.Mouse.current;
-
-            if (mouse == null)
+            if (Camera.main == null)
             {
                 return;
             }
 
-            if (mouse.leftButton.wasPressedThisFrame)
+            Vector2 pressPos = Vector2.zero;
+            Vector2 releasePos = Vector2.zero;
+            bool pressed = false;
+            bool released = false;
+
+            // --- 터치 입력 (모바일 우선) ---
+            if (Touchscreen.current != null && Touch.activeTouches.Count > 0)
             {
-                _pressedCell = ConvertMouseToCell(mouse.position.ReadValue());
+                var touch = Touch.activeTouches[0];
+
+                if (touch.phase == UnityEngine.InputSystem.TouchPhase.Began)
+                {
+                    pressPos = touch.screenPosition;
+                    pressed = true;
+                }
+                else if (touch.phase == UnityEngine.InputSystem.TouchPhase.Ended ||
+                         touch.phase == UnityEngine.InputSystem.TouchPhase.Canceled)
+                {
+                    releasePos = touch.screenPosition;
+                    released = true;
+                }
+            }
+            // --- 마우스 입력 (에디터/PC 폴백) ---
+            else if (Mouse.current != null)
+            {
+                if (Mouse.current.leftButton.wasPressedThisFrame)
+                {
+                    pressPos = Mouse.current.position.ReadValue();
+                    pressed = true;
+                }
+                else if (Mouse.current.leftButton.wasReleasedThisFrame)
+                {
+                    releasePos = Mouse.current.position.ReadValue();
+                    released = true;
+                }
+            }
+
+            if (pressed)
+            {
+                _pressedCell = ScreenToCell(pressPos);
                 _hasPressedCell = true;
             }
 
-            if (!mouse.leftButton.wasReleasedThisFrame || !_hasPressedCell)
+            if (released && _hasPressedCell)
             {
-                return;
-            }
+                var releasedCell = ScreenToCell(releasePos);
+                _hasPressedCell = false;
 
-            var released = ConvertMouseToCell(mouse.position.ReadValue());
-            _hasPressedCell = false;
-
-            if (!IsCellAdjacent(_pressedCell, released))
-            {
-                return;
-            }
-
-            EnqueueSwapRequest(_pressedCell, released);
-        }
-
-        private void EnqueueSwapRequest(int2 from, int2 to)
-        {
-            if (World.GetOrCreateSystemManaged(typeof(BeginSimulationEntityCommandBufferSystem)) is BeginSimulationEntityCommandBufferSystem ecbSystem)
-            {
-                var ecb = ecbSystem.CreateCommandBuffer();
-                var entity = ecb.CreateEntity();
-                ecb.AddComponent(entity, new SwapRequestComponent
+                if (IsCellAdjacent(_pressedCell, releasedCell))
                 {
-                    FromX = from.x,
-                    FromY = from.y,
-                    ToX = to.x,
-                    ToY = to.y,
-                });
+                    EnqueueSwap(_pressedCell, releasedCell);
+                }
             }
         }
 
-        private int2 ConvertMouseToCell(Vector2 screenPos)
+        private void EnqueueSwap(int2 from, int2 to)
         {
-            var configEntity = GetEntityQuery( ComponentType.ReadOnly(typeof(BoardConfigComponent))).GetSingletonEntity();
-            var config = EntityManager.GetComponentData<BoardConfigComponent>(configEntity);
-            if (Camera.main == null)
+            if (World.GetOrCreateSystemManaged(typeof(BeginSimulationEntityCommandBufferSystem))
+                is not BeginSimulationEntityCommandBufferSystem ecbSystem)
             {
-                return new int2();
+                return;
             }
 
-            var worldPos = Camera.main.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, 0f));
-            var x = Mathf.RoundToInt(worldPos.x + config.XDim / 2.0f);
-            var y = Mathf.RoundToInt(config.YDim / 2.0f - worldPos.y);
+            var ecb = ecbSystem.CreateCommandBuffer();
+            var entity = ecb.CreateEntity();
+            ecb.AddComponent(entity, new SwapRequestComponent
+            {
+                FromX = from.x,
+                FromY = from.y,
+                ToX   = to.x,
+                ToY   = to.y,
+            });
+        }
+
+        private int2 ScreenToCell(Vector2 screenPos)
+        {
+            var config = SystemAPI.GetSingleton<BoardConfigComponent>();
+            var worldPos = Camera.main.ScreenToWorldPoint(
+                new Vector3(screenPos.x, screenPos.y, 0f));
+            var x = Mathf.RoundToInt(worldPos.x + config.XDim / 2.0f - 0.5f);
+            var y = Mathf.RoundToInt(config.YDim / 2.0f - worldPos.y - 0.5f);
             return new int2(x, y);
         }
 

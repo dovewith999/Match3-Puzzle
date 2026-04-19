@@ -8,5 +8,6 @@ namespace Match3.ECS.Game
         public int FromY;
         public int ToX;
         public int ToY;
+        public byte IsRollback; // 1 = true (Burst blittable)
     }
 }

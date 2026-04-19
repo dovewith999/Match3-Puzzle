@@ -14,36 +14,65 @@ namespace Match3.ECS.Game
         {
             state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<BoardConfigComponent>();
+            state.RequireForUpdate<LastSwapComponent>();
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var ecb = SystemAPI .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>() .CreateCommandBuffer(state.WorldUnmanaged);
+            var swapQuery = SystemAPI.QueryBuilder()
+                .WithAll<SwapRequestComponent>()
+                .Build();
+
+            if (swapQuery.IsEmpty)
+            {
+                return;
+            }
+
+            var ecb = SystemAPI
+                .GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged);
 
             var config = SystemAPI.GetSingleton<BoardConfigComponent>();
-            int total = config.XDim * config.YDim;
+            int total  = config.XDim * config.YDim;
 
-            var pieces = new NativeArray<PieceComponent>(total, Allocator.Temp);
+            var pieces   = new NativeArray<PieceComponent>(total, Allocator.Temp);
             var entities = new NativeArray<Entity>(total, Allocator.Temp);
 
-            foreach (var (piece, entity) in SystemAPI.Query<RefRO<PieceComponent>>().WithEntityAccess())
+            foreach (var (piece, entity) in
+                SystemAPI.Query<RefRO<PieceComponent>>().WithEntityAccess())
             {
                 var p = piece.ValueRO;
+
                 if (p.X < 0 || p.X >= config.XDim || p.Y < 0 || p.Y >= config.YDim)
                 {
                     continue;
                 }
 
-                int idx = p.Y * config.XDim + p.X;
-                pieces[idx] = p;
+                int idx    = p.Y * config.XDim + p.X;
+                pieces[idx]   = p;
                 entities[idx] = entity;
             }
 
-            foreach (var (request, requestEntity) in SystemAPI.Query<RefRO<SwapRequestComponent>>().WithEntityAccess())
+            foreach (var (request, requestEntity) in
+                SystemAPI.Query<RefRO<SwapRequestComponent>>().WithEntityAccess())
             {
                 var req = request.ValueRO;
-                ProcessSwapRequest(ref state, ref ecb, pieces, entities, config, req);
+
+                // 롤백 스왑(IsRollback==1)이 아닐 때만 LastSwapComponent에 기록
+                if (req.IsRollback == 0)
+                {
+                    SystemAPI.SetSingleton(new LastSwapComponent
+                    {
+                        FromX          = req.FromX,
+                        FromY          = req.FromY,
+                        ToX            = req.ToX,
+                        ToY            = req.ToY,
+                        HasPendingSwap = 1,
+                    });
+                }
+
+                ExecuteSwap(ref ecb, pieces, entities, config, req);
                 ecb.DestroyEntity(requestEntity);
             }
 
@@ -52,56 +81,45 @@ namespace Match3.ECS.Game
         }
 
         [BurstCompile]
-        private static void ProcessSwapRequest(ref SystemState state, ref EntityCommandBuffer ecb, in NativeArray<PieceComponent> pieces, in NativeArray<Entity> entities, in BoardConfigComponent config, in SwapRequestComponent req)
+        private static void ExecuteSwap(
+            ref EntityCommandBuffer ecb,
+            in NativeArray<PieceComponent> pieces,
+            in NativeArray<Entity> entities,
+            in BoardConfigComponent config,
+            in SwapRequestComponent req)
         {
             int fromIdx = req.FromY * config.XDim + req.FromX;
-            int toIdx = req.ToY * config.XDim + req.ToX;
+            int toIdx   = req.ToY   * config.XDim + req.ToX;
 
-            if (fromIdx < 0 || fromIdx >= pieces.Length || toIdx < 0 || toIdx >= pieces.Length)
+            if (fromIdx < 0 || fromIdx >= pieces.Length ||
+                toIdx   < 0 || toIdx   >= pieces.Length)
             {
                 return;
             }
 
             var fromPiece = pieces[fromIdx];
-            var toPiece = pieces[toIdx];
+            var toPiece   = pieces[toIdx];
 
-            if (fromPiece.PieceType == PieceTypeECS.Empty || toPiece.PieceType == PieceTypeECS.Empty)
+            if (fromPiece.PieceType == PieceTypeECS.Empty ||
+                toPiece.PieceType   == PieceTypeECS.Empty)
             {
                 return;
             }
 
             ecb.SetComponent(entities[fromIdx], new PieceComponent
             {
-                X = req.ToX,
-                Y = req.ToY,
+                X         = req.ToX,
+                Y         = req.ToY,
                 PieceType = fromPiece.PieceType,
                 ColorType = fromPiece.ColorType,
             });
 
             ecb.SetComponent(entities[toIdx], new PieceComponent
             {
-                X = req.FromX,
-                Y = req.FromY,
+                X         = req.FromX,
+                Y         = req.FromY,
                 PieceType = toPiece.PieceType,
                 ColorType = toPiece.ColorType,
-            });
-
-            var moveFromEntity = ecb.CreateEntity();
-            ecb.AddComponent(moveFromEntity, new PieceMoveCommand
-            {
-                TargetEntity = entities[fromIdx],
-                ToX = req.ToX,
-                ToY = req.ToY,
-                IsRollback = false,
-            });
-
-            var moveToEntity = ecb.CreateEntity();
-            ecb.AddComponent(moveToEntity, new PieceMoveCommand
-            {
-                TargetEntity = entities[toIdx],
-                ToX = req.FromX,
-                ToY = req.FromY,
-                IsRollback = false,
             });
         }
     }

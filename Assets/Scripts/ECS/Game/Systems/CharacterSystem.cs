@@ -3,26 +3,29 @@ using UnityEngine;
 
 namespace Match3.ECS.UI
 {
-    [WorldSystemFilter(WorldSystemFilterFlags.Presentation)]
-    [UpdateInGroup(typeof(PresentationSystemGroup))]
+    [WorldSystemFilter(WorldSystemFilterFlags.LocalSimulation)]
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
     public partial class CharacterSystem : SystemBase
     {
         private const float ExpressionHoldTime = 2f;
 
         private CharacterExpressionECS _current;
         private float _holdTimer;
+        private EndSimulationEntityCommandBufferSystem _ecbSystem;
 
         protected override void OnCreate()
         {
             _current = CharacterExpressionECS.Idle;
             _holdTimer = 0f;
+            _ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
         }
 
         protected override void OnUpdate()
         {
             _holdTimer -= SystemAPI.Time.DeltaTime;
 
-            var next = ConsumeEvents();
+            var ecb = _ecbSystem.CreateCommandBuffer();
+            var next = ConsumeEvents(ecb);
 
             if (next == CharacterExpressionECS.Idle && _holdTimer > 0f)
             {
@@ -32,14 +35,15 @@ namespace Match3.ECS.UI
             ApplyExpression(next);
         }
 
-        private CharacterExpressionECS ConsumeEvents()
+        private CharacterExpressionECS ConsumeEvents(EntityCommandBuffer ecb)
         {
             var highest = CharacterExpressionECS.Idle;
 
-            foreach (var (ev, entity) in SystemAPI.Query<RefRO<Game.ComboOccurredEvent>>().WithEntityAccess())
+            foreach (var (ev, entity) in
+                SystemAPI.Query<RefRO<Game.ComboOccurredEvent>>().WithEntityAccess())
             {
                 int count = ev.ValueRO.ComboCount;
-                EntityManager.DestroyEntity(entity);
+                ecb.DestroyEntity(entity);
 
                 CharacterExpressionECS expr;
 
@@ -67,15 +71,17 @@ namespace Match3.ECS.UI
                 return highest;
             }
 
-            foreach (var (_, entity) in SystemAPI.Query<RefRO<Game.LowTimeWarningEvent>>().WithEntityAccess())
+            foreach (var (_, ltEntity) in
+                SystemAPI.Query<RefRO<Game.LowTimeWarningEvent>>().WithEntityAccess())
             {
-                EntityManager.DestroyEntity(entity);
+                ecb.DestroyEntity(ltEntity);
                 return CharacterExpressionECS.Nervous;
             }
 
-            foreach (var (_, entity) in SystemAPI.Query<RefRO<Game.NoScoreElapsedEvent>>().WithEntityAccess())
+            foreach (var (_, nsEntity) in
+                SystemAPI.Query<RefRO<Game.NoScoreElapsedEvent>>().WithEntityAccess())
             {
-                EntityManager.DestroyEntity(entity);
+                ecb.DestroyEntity(nsEntity);
                 return CharacterExpressionECS.Bored;
             }
 
